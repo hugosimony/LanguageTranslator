@@ -1,10 +1,15 @@
 package fr.hugosimony.languagetranslator;
 
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Arrays;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -23,9 +28,18 @@ public class Translator extends JFrame {
 	// Components and settings
 	
 	private JPanel mainPanel = new JPanel();
-	private JTextArea input = new JTextArea();
-	private JTextArea output = new JTextArea();
+	private JTextArea inputArea = new JTextArea();
+	private JTextArea outputArea = new JTextArea();
 	private JButton translateButton = new JButton();
+	private JButton nextButton = new JButton();
+	private JButton previousButton = new JButton();
+
+	private String[] resultParts;
+	private String result;
+	private int resultIndex;
+	
+	private int DEFAULT_WIDTH = 1000;
+	private int DEFAULT_HEIGHT = 600;
 	
 	private static final String[] LANGUAGES = {
 		    "af", "sq", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "ny", "zh-TW", "hr",
@@ -40,10 +54,18 @@ public class Translator extends JFrame {
 	
 	public Translator() {
 		
+		/*
+		 * Create the frame of the translator.
+		 * Contains the input and output areas and all the buttons to translate, switch, etc...
+		 */
+		
+		//**************************************************************************
+		// Initializing frame
+		
 		setTitle("Language Translator");
 		setLayout(null);
-		setSize(1000,600);
-		setMinimumSize(new Dimension(500,400));
+		setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+		setMinimumSize(new Dimension(500,300));
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		addComponentListener(new ComponentAdapter() {
@@ -59,7 +81,66 @@ public class Translator extends JFrame {
 	    	}
 		});
 		
-		translate("anglais", "francais", "get");
+		result = "";
+		resultIndex = 0;
+		
+		//**************************************************************************
+		// Creating components
+		
+		updateComponents();
+		
+		//**********************
+		// Text Areas
+
+		inputArea.setMargin(new Insets(10, 10, 10, 10));
+
+		outputArea.setMargin(new Insets(10, 10, 10, 10));
+		outputArea.setEditable(false);
+
+		//**********************
+		// Translate Button
+
+		translateButton.setText("Translate");
+		translateButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				translate("francais", "anglais", inputArea.getText());
+			}
+		});
+
+		//**********************
+		// Previous translation Button
+
+		previousButton.setEnabled(false);
+		previousButton.setText("Previous");
+		previousButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				printPreviousTranslation();
+			}
+		});
+		
+		//**********************
+		// Next translation Button
+		
+		nextButton.setEnabled(false);
+		nextButton.setText("Next");
+		nextButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				printNextTranslation();
+			}
+		});
+		
+		//**************************************************************************
+		// Adding components
+		
+		mainPanel.add(inputArea);
+		mainPanel.add(outputArea);
+		mainPanel.add(translateButton);
+		mainPanel.add(previousButton);
+		mainPanel.add(nextButton);
+		add(mainPanel);
 	}
 	
 	//**************************************************************************
@@ -73,6 +154,11 @@ public class Translator extends JFrame {
 		
 		input = getWordToTranslate(input);
 		
+		// Reset the buttons
+		previousButton.setEnabled(false);
+		nextButton.setEnabled(false);
+		resultIndex = 0;
+		
 		// Send to the website the request of the translation and get its answer.
 		try {
 			String text = Web.getHTMLText(lfrom, lto, input);
@@ -81,13 +167,13 @@ public class Translator extends JFrame {
 			
 			if(text.contains("noresults wide_in_main")) {
 				// No translation found
-				System.out.println("there is no translation");
+				outputArea.setText("No translation found :/");
 			}
 			
 			else if(text.contains("Essayez avec cette orthographe")) {
 				// The word is wrong but close. Print the more likely word.
 				String corrected = getCorrectedWord(text.split("class=\'corrected\'")[1]);
-				System.out.println("The corrected word is : " + corrected);
+				outputArea.setText("Try with \"" + corrected + "\".");
 			}
 			
 			else {
@@ -95,12 +181,16 @@ public class Translator extends JFrame {
 				String[] translationParts = text.split("lid=");
 				if(translationParts.length > 1) {
 					// A translation exists
-					String translation = getTranslation(translationParts[2]);
-					System.out.println("The translation is : " + translation);
+					String translation = getTranslation(translationParts[resultIndex + 2]);
+					resultParts = translationParts;
+					result = translation;
+					outputArea.setText(translation);
+					if(translationParts.length > 2)
+						nextButton.setEnabled(true);
 				}
 				else {
 					// There is no translation
-					System.out.println("There is no translation for " + input);
+					outputArea.setText("No translation found :/");
 				}
 			}
 		} 
@@ -108,8 +198,45 @@ public class Translator extends JFrame {
 			// The website has not answered
 			e.printStackTrace();
 		}
+	}
+
+	private void printPreviousTranslation() {
+		
+		/*
+		 * Print the previous translation if it exists
+		 * Disable the previous button if there is no more previous translation
+		 */
+
+		// Print the previous solution
+		resultIndex--;
+		result = getTranslation(resultParts[resultIndex + 2]);
+		outputArea.setText(result);
+		
+		// Check if there is another previous solution
+		if(resultIndex == 0)
+			previousButton.setEnabled(false);
+		nextButton.setEnabled(true);
 		
 	}
+	
+	private void printNextTranslation() {
+		
+		/*
+		 * Print the next translation if it exists
+		 * Disable the next button if there is no more next translation
+		 */
+		
+		// Print the next solution
+		resultIndex++;
+		result = getTranslation(resultParts[resultIndex + 2]);
+		outputArea.setText(result);
+		
+		// Check if there is another next solution
+		if(resultIndex + 2 >= resultParts.length - 1)
+			nextButton.setEnabled(false);
+		previousButton.setEnabled(true);
+	}
+	
 	
 	private String getWordToTranslate(String input) {
 		
@@ -158,7 +285,64 @@ public class Translator extends JFrame {
 		return correctedPart.split(">")[1].split("<")[0];
 	}
 	
+	private Font getUpdatedFont(int width) {
+		if(width < DEFAULT_WIDTH - 200)
+			return new Font("Arial", Font.BOLD, 10);
+		if(width < DEFAULT_WIDTH)
+			return new Font("Arial", Font.BOLD, 15);
+		if(width >= DEFAULT_WIDTH && width < DEFAULT_WIDTH + 300)
+			return new Font("Arial", Font.BOLD, 20);
+		return new Font("Arial", Font.BOLD, 25);
+	}
+	
 	private void updateComponents() {
+		
+		/*
+		 * Update the components size and font when the window is resized
+		 */
+		
+		//**********************
+		// Main panel
+		
+		mainPanel.setLayout(null);
+		mainPanel.setLocation(0,0);
+		mainPanel.setSize(getWidth(), getHeight());
+		
+		//**********************
+		// Input Text Area
+		
+		inputArea.setLocation(getWidth()/15, getHeight()/6);
+		inputArea.setSize(getWidth()/3, getHeight()/2);
+		inputArea.setFont(getUpdatedFont(getWidth()));
+		
+		//**********************
+		// Output Text Area
+		
+		outputArea.setLocation(getWidth() - getWidth()/12 - getWidth()/3, getHeight()/6);
+		outputArea.setSize(getWidth()/3, getHeight()/2);
+		outputArea.setFont(getUpdatedFont(getWidth()));
+		outputArea.setMargin(new Insets(10, 10, 10, 10));
+		
+		//**********************
+		// Translate Button
+		
+		translateButton.setLocation(getWidth()/2 - getWidth()/11, getHeight()/2 - getHeight()/8);
+		translateButton.setSize(getWidth()/6, getHeight()/8);
+		translateButton.setFont(getUpdatedFont(getWidth()));
+		
+		//**********************
+		// Previous Button
+		
+		previousButton.setLocation(getWidth() - getWidth()/14 - getWidth()/3, getHeight() - getHeight()/3  + getHeight()/18);
+		previousButton.setSize(getWidth()/7, getHeight()/8);
+		previousButton.setFont(getUpdatedFont(getWidth()));
+		
+		//**********************
+		// Next Button
+		
+		nextButton.setLocation(getWidth() - getWidth()/11 - getWidth()/7, getHeight() - getHeight()/3 + getHeight()/18);
+		nextButton.setSize(getWidth()/7, getHeight()/8);
+		nextButton.setFont(getUpdatedFont(getWidth()));
 		
 	}
 	
