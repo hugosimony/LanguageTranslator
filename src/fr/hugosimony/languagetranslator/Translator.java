@@ -1,6 +1,7 @@
 package fr.hugosimony.languagetranslator;
 
 import java.awt.Dimension;
+
 import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -9,12 +10,16 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.Arrays;
+//import t2s.son.LecteurTexte;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+
+// tts
+// import com.sun.speech.freetts.Voice;
+// import com.sun.speech.freetts.VoiceManager;
 
 public class Translator extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -31,6 +36,8 @@ public class Translator extends JFrame {
 	private JTextArea inputArea = new JTextArea();
 	private JTextArea outputArea = new JTextArea();
 	private JButton translateButton = new JButton();
+	//private JButton readButton = new JButton();
+	private JButton clearButton = new JButton();
 	private JButton nextButton = new JButton();
 	private JButton previousButton = new JButton();
 
@@ -38,8 +45,11 @@ public class Translator extends JFrame {
 	private String result;
 	private int resultIndex;
 	
+	//LecteurTexte lecteur = new LecteurTexte();
+	
 	private int DEFAULT_WIDTH = 1000;
 	private int DEFAULT_HEIGHT = 600;
+	
 	
 	private static final String[] LANGUAGES = {
 		    "af", "sq", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "ny", "zh-TW", "hr",
@@ -107,6 +117,40 @@ public class Translator extends JFrame {
 				translate("francais", "anglais", inputArea.getText());
 			}
 		});
+		
+		/*
+		//**********************
+		// Read Button
+
+		readButton.setEnabled(false);
+		readButton.setText("Read");
+		readButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				lecteur.setTexte(result);
+				//lecteur.playAll();
+				readEnglishText(result);
+			}
+		});
+		*/
+		
+		//**********************
+		// Clear Button
+
+		clearButton.setText("Clear");
+		clearButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// Clear the areas
+				inputArea.setText("");
+				outputArea.setText("");
+				// Reset the buttons
+				previousButton.setEnabled(false);
+				nextButton.setEnabled(false);
+				//readButton.setEnabled(false);
+				resultIndex = 0;
+			}
+		});
 
 		//**********************
 		// Previous translation Button
@@ -138,6 +182,8 @@ public class Translator extends JFrame {
 		mainPanel.add(inputArea);
 		mainPanel.add(outputArea);
 		mainPanel.add(translateButton);
+		//mainPanel.add(readButton);
+		mainPanel.add(clearButton);
 		mainPanel.add(previousButton);
 		mainPanel.add(nextButton);
 		add(mainPanel);
@@ -157,6 +203,7 @@ public class Translator extends JFrame {
 		// Reset the buttons
 		previousButton.setEnabled(false);
 		nextButton.setEnabled(false);
+		//readButton.setEnabled(false);
 		resultIndex = 0;
 		
 		// Send to the website the request of the translation and get its answer.
@@ -187,6 +234,7 @@ public class Translator extends JFrame {
 					outputArea.setText(translation);
 					if(translationParts.length > 2)
 						nextButton.setEnabled(true);
+					//readButton.setEnabled(true);
 				}
 				else {
 					// There is no translation
@@ -295,6 +343,25 @@ public class Translator extends JFrame {
 		return new Font("Arial", Font.BOLD, 25);
 	}
 	
+	/*
+	private void readEnglishText(String text) {
+
+		 *
+		 * Read a text in english
+		 *
+		
+		String voiceName = "kevin16";
+        VoiceManager voiceManager = VoiceManager.getInstance();
+        Voice voice = voiceManager.getVoice(voiceName);
+        if (voice == null)
+            System.exit(1);
+        
+        voice.allocate();
+        voice.speak(text);
+        voice.deallocate();
+	}
+	*/
+	
 	private void updateComponents() {
 		
 		/*
@@ -326,9 +393,25 @@ public class Translator extends JFrame {
 		//**********************
 		// Translate Button
 		
-		translateButton.setLocation(getWidth()/2 - getWidth()/11, getHeight()/2 - getHeight()/8);
+		translateButton.setLocation(getWidth()/2 - getWidth()/11, getHeight()/2 - getHeight()/4);
 		translateButton.setSize(getWidth()/6, getHeight()/8);
 		translateButton.setFont(getUpdatedFont(getWidth()));
+		
+		/*
+		//**********************
+		// Read Button
+		
+		readButton.setLocation(getWidth()/2 - getWidth()/11, getHeight()/2 - getHeight()/16);
+		readButton.setSize(getWidth()/6, getHeight()/8);
+		readButton.setFont(getUpdatedFont(getWidth()));
+		*/
+		
+		//**********************
+		// Clear Button
+		
+		clearButton.setLocation(getWidth()/12, getHeight() - getHeight()/3  + getHeight()/18);
+		clearButton.setSize(getWidth()/4 + getWidth()/20, getHeight()/8);
+		clearButton.setFont(getUpdatedFont(getWidth()));
 		
 		//**********************
 		// Previous Button
@@ -345,6 +428,4 @@ public class Translator extends JFrame {
 		nextButton.setFont(getUpdatedFont(getWidth()));
 		
 	}
-	
-	
 }

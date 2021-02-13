@@ -10,7 +10,7 @@ public class Web {
 	public static String getHTMLText(String lfrom, String lto, String word) throws IOException {
 		
 		// Get the good url
-		URL url = new URL("https://www.linguee.fr/" + lfrom + "-" + lto + "/search?source=auto&query=" + word);*
+		URL url = new URL("https://www.linguee.fr/" + lfrom + "-" + lto + "/search?source=auto&query=" + word);
 		
 		// Connect to the website
 		URLConnection con = url.openConnection();
