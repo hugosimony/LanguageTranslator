@@ -4,22 +4,27 @@ import java.awt.Dimension;
 
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 //import t2s.son.LecteurTexte;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
-
 // tts
 // import com.sun.speech.freetts.Voice;
 // import com.sun.speech.freetts.VoiceManager;
+import javax.swing.SwingConstants;
 
 public class Translator extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -35,6 +40,9 @@ public class Translator extends JFrame {
 	private JPanel mainPanel = new JPanel();
 	private JTextArea inputArea = new JTextArea();
 	private JTextArea outputArea = new JTextArea();
+	private JComboBox<String> inputLanguages = new JComboBox<>();
+	private JComboBox<String> outputLanguages = new JComboBox<>();
+	private JButton switchButton = new JButton();
 	private JButton translateButton = new JButton();
 	//private JButton readButton = new JButton();
 	private JButton clearButton = new JButton();
@@ -52,12 +60,9 @@ public class Translator extends JFrame {
 	
 	
 	private static final String[] LANGUAGES = {
-		    "af", "sq", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "ny", "zh-TW", "hr",
-		    "cs", "da", "nl", "en", "eo", "et", "tl", "fi", "fr", "gl", "ka", "de", "el", "gu", "ht", "ha",
-		    "iw", "hi", "hmn", "hu", "is", "ig", "id", "ga", "it", "ja", "jw", "kn", "kk", "km", "ko", "lo",
-		    "la", "lv", "lt", "mk", "mg", "ms", "ml", "mt", "mi", "mr", "mn", "my", "ne", "no", "fa", "pl",
-		    "pt", "ro", "ru", "sr", "st", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tg", "ta", "te",
-		    "th", "tr", "uk", "ur", "uz", "vi", "cy", "yi", "yo", "zu"
+		    "Francais", "Anglais", "Allemand", "Espagnol", "Italien", "Portugais", "Neerlandais", "Polonais", "Suedois",
+		    "Danois", "Finois", "Grec", "Tcheque", "Roumain", "Hongrois", "Slovaque", "Bulgare", "Slovene", "Lituanien",
+		    "Letton", "Estonien", "Maltais"
 		  };
 	
 	//**************************************************************************
@@ -75,7 +80,7 @@ public class Translator extends JFrame {
 		setTitle("Language Translator");
 		setLayout(null);
 		setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-		setMinimumSize(new Dimension(500,300));
+		setMinimumSize(new Dimension(560,300));
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		addComponentListener(new ComponentAdapter() {
@@ -106,7 +111,41 @@ public class Translator extends JFrame {
 
 		outputArea.setMargin(new Insets(10, 10, 10, 10));
 		outputArea.setEditable(false);
+		
+		//**********************
+		// Languages Selection
+		
+		inputLanguages = new JComboBox<>(LANGUAGES);
+		((JLabel)inputLanguages.getRenderer()).setHorizontalAlignment(SwingConstants.CENTER);
+		inputLanguages.setSelectedIndex(0);
+		inputLanguages.setFocusable(false);
+		
+		outputLanguages = new JComboBox<>(LANGUAGES);
+		((JLabel)outputLanguages.getRenderer()).setHorizontalAlignment(SwingConstants.CENTER);
+		outputLanguages.setSelectedIndex(1);
+		outputLanguages.setFocusable(false);
 
+		//**********************
+		// Switch Button
+
+		switchButton.setText("Switch");
+		switchButton.setFocusable(false);
+		switchButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				
+				// Switch the languages
+				String ltemp = (String) inputLanguages.getSelectedItem();
+				inputLanguages.setSelectedItem(outputLanguages.getSelectedItem());
+				outputLanguages.setSelectedItem(ltemp);
+				
+				//Switch the texts
+				String text = inputArea.getText();
+				inputArea.setText(outputArea.getText());
+				outputArea.setText(text);
+			}
+		});
+		
 		//**********************
 		// Translate Button
 
@@ -114,7 +153,7 @@ public class Translator extends JFrame {
 		translateButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				translate("francais", "anglais", inputArea.getText());
+				translate((String) inputLanguages.getSelectedItem(), (String) outputLanguages.getSelectedItem(), inputArea.getText());
 			}
 		});
 		
@@ -181,12 +220,22 @@ public class Translator extends JFrame {
 		
 		mainPanel.add(inputArea);
 		mainPanel.add(outputArea);
+		mainPanel.add(inputLanguages);
+		mainPanel.add(outputLanguages);
+		mainPanel.add(switchButton);
 		mainPanel.add(translateButton);
 		//mainPanel.add(readButton);
 		mainPanel.add(clearButton);
 		mainPanel.add(previousButton);
 		mainPanel.add(nextButton);
 		add(mainPanel);
+		
+		//**************************************************************************
+		// Key listener
+		
+		KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+		manager.addKeyEventDispatcher(new KeyListener(this));
+		
 	}
 	
 	//**************************************************************************
@@ -232,7 +281,7 @@ public class Translator extends JFrame {
 					resultParts = translationParts;
 					result = translation;
 					outputArea.setText(translation);
-					if(translationParts.length > 2)
+					if(translationParts.length > 3)
 						nextButton.setEnabled(true);
 					//readButton.setEnabled(true);
 				}
@@ -295,7 +344,9 @@ public class Translator extends JFrame {
 		String result = "";
 		
 		for(int i = 0; i < input.length(); i++) {
-			if(Character.isLetter(input.charAt(i)))
+			if(input.charAt(i) == ' ')
+				result += "+";
+			else if(Character.isLetter(input.charAt(i)))
 				result += input.charAt(i);
 		}
 		
@@ -391,6 +442,27 @@ public class Translator extends JFrame {
 		outputArea.setMargin(new Insets(10, 10, 10, 10));
 		
 		//**********************
+		// Input Languages
+		
+		inputLanguages.setLocation(getWidth()/15 + (getWidth()/3 - getWidth()/6) / 2, getHeight()/24);
+		inputLanguages.setSize(getWidth()/6, getHeight()/12);
+		inputLanguages.setFont(getUpdatedFont(getWidth()));
+		
+		//**********************
+		// Output Languages
+		
+		outputLanguages.setLocation(getWidth() - getWidth()/12 - getWidth()/3 + (getWidth()/3 - getWidth()/6) / 2, getHeight()/24);
+		outputLanguages.setSize(getWidth()/6, getHeight()/12);
+		outputLanguages.setFont(getUpdatedFont(getWidth()));
+		
+		//**********************
+		// Switch Button
+		
+		switchButton.setLocation(getWidth()/2 - getWidth()/11, getHeight()/24);
+		switchButton.setSize(getWidth()/6, getHeight()/12);
+		switchButton.setFont(getUpdatedFont(getWidth()));
+		
+		//**********************
 		// Translate Button
 		
 		translateButton.setLocation(getWidth()/2 - getWidth()/11, getHeight()/2 - getHeight()/4);
@@ -427,5 +499,41 @@ public class Translator extends JFrame {
 		nextButton.setSize(getWidth()/7, getHeight()/8);
 		nextButton.setFont(getUpdatedFont(getWidth()));
 		
+	}
+	
+	//**************************************************************************
+	// Classes
+	
+	private class KeyListener implements KeyEventDispatcher {
+		
+		/*
+		 * Listener for the enter key
+		 *  - Translate the input text when the user press enter
+		 *  - Cancel the event.
+		 *  - Do nothing if the input area is empty
+		 *  - Cancel the space key
+		 */
+		
+		private Translator tl;
+		
+		public KeyListener(Translator tl) {
+			this.tl = tl;
+		}
+		
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent event) {
+        	
+        	if(tl.isVisible()) {
+        		if(event.getID() == KeyEvent.KEY_PRESSED) {
+        			int keyCode = event.getKeyCode();
+        			if(keyCode == KeyEvent.VK_ENTER) {
+    					if(!inputArea.getText().equals(""))
+    						translate((String) inputLanguages.getSelectedItem(), (String) outputLanguages.getSelectedItem(), inputArea.getText());
+						event.consume();
+        			}
+        		}
+        	}
+        	return false;
+        }
 	}
 }
