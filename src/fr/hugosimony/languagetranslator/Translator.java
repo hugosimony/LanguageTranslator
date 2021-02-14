@@ -14,6 +14,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 //import t2s.son.LecteurTexte;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -21,6 +25,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+
 // tts
 // import com.sun.speech.freetts.Voice;
 // import com.sun.speech.freetts.VoiceManager;
@@ -350,13 +355,19 @@ public class Translator extends JFrame {
 				result += input.charAt(i);
 		}
 		
+		// Encode the possible accents
+		try {
+			result = URLEncoder.encode(result, StandardCharsets.UTF_8.name());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
 		return result;
 	}
 	
 	private String getTranslation(String translationPart) {
 		
 		/*
-		 * Return the first word (the translation) before the # or the numbers and after the "'XX:" sequence
+		 * Return the first word (the translation) before the > or the numbers and after the "'XX:" sequence
 		 */
 		
 		String translation = "";
@@ -368,8 +379,28 @@ public class Translator extends JFrame {
 			i++;
 		}
 		
-		// Remove the part after the translation and put an upper case in front of the word
-		translation = translation.split("#")[0];
+		// Remove the part after the translation
+		translation = translation.split("'>")[0];
+		
+		// Decode the possible accents and fix the translation
+		String temp = translationPart.split("/traduction/")[1];
+		try {
+			temp = URLDecoder.decode(temp, StandardCharsets.UTF_8.name());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		for(int j = 0; j < translation.length(); j++) {
+			if(!(temp.charAt(j)+"").equalsIgnoreCase(translation.charAt(j)+"")) {
+				if(temp.charAt(j) == '.')
+					translation = translation.substring(0, j);
+				else if(temp.charAt(j) == '+')
+					translation = translation.replaceFirst("#", " ");
+				else
+					translation = translation.replaceFirst("#", temp.charAt(j)+"");
+			}
+		}
+		
+		// Put an upper case in front of the word
 		translation = translation.replaceFirst(translation.charAt(0) + "", (translation.charAt(0) + "").toUpperCase());
 		
 		return translation;
