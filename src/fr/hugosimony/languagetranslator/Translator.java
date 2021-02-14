@@ -60,8 +60,8 @@ public class Translator extends JFrame {
 	
 	//LecteurTexte lecteur = new LecteurTexte();
 	
-	private int DEFAULT_WIDTH = 1000;
-	private int DEFAULT_HEIGHT = 600;
+	private final int DEFAULT_WIDTH = 1000;
+	private final int DEFAULT_HEIGHT = 600;
 	
 	
 	private static final String[] LANGUAGES = {
@@ -355,7 +355,7 @@ public class Translator extends JFrame {
 				result += input.charAt(i);
 		}
 		
-		// Encode the possible accents
+		// Encode the possible accents and speciai chars
 		try {
 			result = URLEncoder.encode(result, StandardCharsets.UTF_8.name());
 		} catch (UnsupportedEncodingException e) {

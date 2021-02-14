@@ -15,7 +15,5 @@ public class Main {
 		// Start the translator frame
 		Translator tl = new Translator();
 		tl.setVisible(true);
-		
 	}
-	
 }
